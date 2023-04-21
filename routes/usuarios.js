@@ -12,6 +12,32 @@ const supabaseKey = process.env.API_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 
+
+//Funciones
+// Middleware de autenticación para verificar el token de autenticación
+function authMiddleware(req, res, next) {
+    // Obtener el token de autenticación de la cabecera de la solicitud
+    const authToken = req.headers.authorization?.split(' ')[1];
+
+    if (!authToken) {
+        return res.status(401).json({ error: 'Se requiere autenticación' });
+    }
+
+    try {
+        // Verificar el token de autenticación
+        const decodedToken = jwt.verify(authToken, secretKey);
+
+        // Almacenar los datos del usuario en la solicitud para su uso posterior
+        req.usuario = decodedToken;
+
+        // Continuar con la solicitud
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Token de autenticación inválido' });
+    }
+}
+
+
 // Ruta GET para obtener todos los usuarios
 router.get('/usuarios', async (req, res) => {
     const { data, error } = await supabase.from('usuarios').select('*');
@@ -115,40 +141,50 @@ router.post('/usuarios/login', async (req, res) => {
 
 });
 
+// Obtener los datos del usuario que ha iniciado sesión
+router.get('/usuarios', authMiddleware, async (req, res) => {
+    try {
+        const usuarioId = req.usuario.id_usuario;
 
-// Middleware para verificar token de autenticación
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id_usuario', usuarioId)
+            .single();
 
-    if (token == null) {
-        return res.status(401).json({ error: 'Token de autenticación no proporcionado' });
-    }
-
-    jwt.verify(token, secretKey, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Token de autenticación inválido' });
+        if (error) {
+            return res.status(500).json({ error: 'Error al obtener los datos del usuario' });
         }
 
-        req.user = user;
-        next();
-    });
-}
+        if (!data) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        return res.status(200).json(data);
+    } catch (error) {
+        return res.status(500).json({ error: 'Error al obtener los datos del usuario' });
+    }
+});
+
 
 // Ruta para obtener información del usuario autenticado
-router.get('/me', authenticateToken, async (req, res) => {
-    const userId = req.user.id;
-    const { data: user, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
+router.get('/perfil', authMiddleware, async (req, res) => {
+    const usuarioId = req.usuario.id_usuario;
+    const { data, error } = await supabase
+        .from('usuarios')
+        .select('id_usuario, correo, nombre, apellidos')
+        .eq('id_usuario', usuarioId)
         .single();
 
     if (error) {
-        return res.status(500).json({ error: 'Error al obtener la información del usuario' });
+        return res.status(500).json({ error: 'Error al obtener el usuario' });
     }
 
-    res.status(200).json(user);
+    if (!data) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json(data);
 });
 
 

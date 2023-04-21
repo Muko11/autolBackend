@@ -34,4 +34,51 @@
                 tablaUsuarios.querySelector('tbody').appendChild(fila);
             });
         });
+
+
+
+
+
+    fetch('api/usuarios/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            correo: "angel@gmail.com",
+            password: "angel"
+        })
+    })
+
+        .then(response => response.json())
+        .then(data => {
+            // Almacenar token en localStorage
+            localStorage.setItem('authToken', data.token);
+            console.log(data.token)
+        })
+        .catch(error => console.error(error));
+
+
+
+    // Obtener el token de autenticación del almacenamiento local
+    const authToken = localStorage.getItem('authToken');
+
+    // Si el token no existe, redirigir al usuario a la página de inicio de sesión
+    if (!authToken) {
+        window.location.href = 'api/usuarios/login';
+    }
+
+    // Configurar la cabecera de la solicitud con el token de autenticación
+    const headers = {
+        'Authorization': `Bearer ${authToken}`
+    };
+
+    // Hacer una solicitud para obtener los datos del usuario
+    fetch('api/perfil', { headers })
+        .then(response => response.json())
+        .then(data => {
+            // Mostrar los datos del usuario en la página
+            console.log(data);
+        })
+        .catch(error => console.error(error));
+
+
 </script>
