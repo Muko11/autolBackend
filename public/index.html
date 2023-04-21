@@ -1,0 +1,37 @@
+<table id="tabla-usuarios">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Apellidos</th>
+            <th>Correo</th>
+            <th>Rol</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<script>
+    const tablaUsuarios = document.getElementById('tabla-usuarios');
+
+    fetch('/api/usuarios')
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(usuario => {
+                const fila = document.createElement('tr');
+                const nombre = document.createElement('td');
+                nombre.textContent = usuario.nombre;
+                const apellidos = document.createElement('td');
+                apellidos.textContent = usuario.apellidos;
+                const correo = document.createElement('td');
+                correo.textContent = usuario.correo;
+                const rol = document.createElement('td');
+                rol.textContent = usuario.rol;
+                fila.appendChild(nombre);
+                fila.appendChild(apellidos);
+                fila.appendChild(correo);
+                fila.appendChild(rol);
+                tablaUsuarios.querySelector('tbody').appendChild(fila);
+            });
+        });
+</script>
