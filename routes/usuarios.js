@@ -1,46 +1,16 @@
-require('dotenv').config();
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const secretKey = 'asfsa93GL45GDDJAjsws';
 
 // Configuración de Supabase
-const supabaseUrl = process.env.BD_URI;
-const supabaseKey = process.env.API_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = require('../config');
 
 
 
-//Funciones
-// Middleware de autenticación para verificar el token de autenticación
-function authMiddleware(req, res, next) {
-    // Obtener el token de autenticación de la cabecera de la solicitud
-    const authToken = req.headers.authorization?.split(' ')[1];
+/* Lista de usuarios */
 
-    if (!authToken) {
-        return res.status(401).json({ error: 'Se requiere autenticación' });
-    }
-
-    try {
-        // Verificar el token de autenticación
-        const decodedToken = jwt.verify(authToken, secretKey);
-
-        // Almacenar los datos del usuario en la solicitud para su uso posterior
-        req.usuario = decodedToken;
-
-        // Continuar con la solicitud
-        next();
-    } catch (error) {
-        return res.status(401).json({ error: 'Token de autenticación inválido' });
-    }
-}
-
-
-// Ruta GET para obtener todos los usuarios
 router.get('/usuarios', async (req, res) => {
-    const { data, error } = await supabase.from('usuarios').select('*');
+    const { data, error } = await supabase.from('usuarios').select('id_usuario, correo, nombre, apellidos, rol');
 
     if (error) {
         return res.status(500).json({ error: 'Error al obtener los usuarios' });
@@ -50,13 +20,18 @@ router.get('/usuarios', async (req, res) => {
 });
 
 
-// Ruta GET para buscar un usuario por su id
+
+
+
+
+/* Buscar por id */
+
 router.get('/usuarios/:id', async (req, res) => {
     const idUsuario = req.params.id;
 
     const { data, error } = await supabase
         .from('usuarios')
-        .select('*')
+        .select('id_usuario, correo, nombre, apellidos, rol')
         .eq('id_usuario', idUsuario);
 
     if (error) {
@@ -73,8 +48,11 @@ router.get('/usuarios/:id', async (req, res) => {
 
 
 
-// Ruta POST para crear un nuevo usuario
-router.post('/usuarios/singup', async (req, res) => {
+
+
+/* Crear usuario */
+
+router.post('/singup', async (req, res) => {
     const { nombre, apellidos, correo, password, rol } = req.body;
 
     // Hasheamos la contraseña
@@ -108,13 +86,17 @@ router.post('/usuarios/singup', async (req, res) => {
 });
 
 
-//Post para Login
-router.post('/usuarios/login', async (req, res) => {
+
+
+
+/* Login */
+
+router.post('/login', async (req, res) => {
     // Verificar usuario y contraseña
     const { correo, password } = req.body;
     const { data, error } = await supabase
         .from('usuarios')
-        .select('id_usuario, correo, password, rol')
+        .select('id_usuario, nombre, correo, password, rol')
         .eq('correo', correo)
         .single();
 
@@ -126,66 +108,54 @@ router.post('/usuarios/login', async (req, res) => {
         return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
-    const { id_usuario, password: hashedPassword, rol } = data;
+    const { id_usuario, nombre, password: hashedPassword, rol } = data;
     const passwordMatch = await bcrypt.compare(password, hashedPassword);
 
     if (!passwordMatch) {
         return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
-    // Generar token de autenticación y almacenarlo en el local storage
-    const token = jwt.sign({ id_usuario, correo, rol }, secretKey, { expiresIn: '1d' });
-
-    // Enviar respuesta al cliente con el token de autenticación
-    res.status(200).json({ message: 'Inicio de sesión exitoso', token });
+    // Almacenar información de sesión en req.session
+    req.session.usuario = { id_usuario, nombre, correo, rol };
+    return res.status(201).json({ message: 'Inicio de sesión exitoso' });
 
 });
 
-// Obtener los datos del usuario que ha iniciado sesión
-router.get('/usuarios', authMiddleware, async (req, res) => {
-    try {
-        const usuarioId = req.usuario.id_usuario;
 
+
+
+
+/* Perfil del usuario */
+
+router.get('/account', async (req, res) => {
+    // Obtener la información de sesión del usuario para verificar si está autenticado
+    const usuarioId = req.session.usuario.id_usuario;
+
+    if (usuarioId) {
+        // Si el usuario está autenticado, hacer una consulta a la base de datos para obtener sus datos
         const { data, error } = await supabase
             .from('usuarios')
-            .select('*')
+            .select('id_usuario, correo, nombre, apellidos, rol')
             .eq('id_usuario', usuarioId)
             .single();
 
         if (error) {
-            return res.status(500).json({ error: 'Error al obtener los datos del usuario' });
+            return res.status(500).json({ error: 'Error al obtener el usuario' });
         }
 
         if (!data) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        return res.status(200).json(data);
-    } catch (error) {
-        return res.status(500).json({ error: 'Error al obtener los datos del usuario' });
+        // Devolver los datos en formato JSON
+        res.json(data);
+    } else {
+        // Si el usuario no está autenticado, redirigirlo a la página de inicio de sesión
+        res.redirect('/');
     }
 });
 
 
-// Ruta para obtener información del usuario autenticado
-router.get('/perfil', authMiddleware, async (req, res) => {
-    const usuarioId = req.usuario.id_usuario;
-    const { data, error } = await supabase
-        .from('usuarios')
-        .select('id_usuario, correo, nombre, apellidos')
-        .eq('id_usuario', usuarioId)
-        .single();
-
-    if (error) {
-        return res.status(500).json({ error: 'Error al obtener el usuario' });
-    }
-
-    if (!data) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    res.status(200).json(data);
-});
 
 
 module.exports = router;
