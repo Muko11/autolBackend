@@ -20,10 +20,6 @@ router.get('/usuarios', async (req, res) => {
 });
 
 
-
-
-
-
 /* Buscar por id */
 
 router.get('/usuarios/:id', async (req, res) => {
@@ -84,8 +80,6 @@ router.post('/singup', async (req, res) => {
 
     res.status(201).json({ message: 'Usuario creado correctamente' });
 });
-
-
 
 
 

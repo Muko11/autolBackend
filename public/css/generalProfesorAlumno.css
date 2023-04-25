@@ -1,0 +1,110 @@
+@import url(general.css);
+
+/* Margenes body y contenedor panelContenido */
+
+body {
+    margin-top: 6%;
+}
+
+.panelContenido {
+    margin-bottom: 7%;
+}
+
+/* Menú lateral */
+
+.aside {
+    padding: 10px;
+    border-left: 5px solid #5499C7;
+}
+
+.nav-tabs .nav-link {
+    text-align: center;
+    color: black;
+}
+
+.nav-tabs .nav-link.active {
+    color: white;
+    background-color: #5499C7;
+    border: 0;
+}
+
+.nav-link:hover {
+    transition: none;
+}
+
+/* Tablas */
+thead {
+    background-color: #5499C7;
+    color: white;
+    height: 50px;
+}
+
+table th,
+table tr {
+    text-align: left;
+    vertical-align: middle;
+}
+  
+
+/* Comunicados */
+.comunicados {
+    border-left: 5px solid #5499C7;
+}
+
+
+
+/* Iconos */
+.iconos-tabla {
+    width: 30px;
+    height: 30px;
+}
+
+.i-trash {
+    color: red;
+}
+
+.i-finalizado {
+    color: green;
+}
+
+/* .i-finalizado:hover {
+    color: lightseagreen;
+} */
+
+.i-edit {
+    color: darkorchid;
+}
+
+/* .i-edit:hover {
+    color: peru;
+}
+ */
+.i-reserva {
+    color: limegreen;
+}
+
+.i-historial {
+    color: goldenrod;
+}
+
+.i-añadir {
+    color: limegreen;
+}
+
+
+
+
+/* Botón borrar */
+.boton-borrar {
+    background-color: rgb(245, 56, 56);
+    color: white;
+    text-decoration: none;
+    padding: 12px 36px;
+    border: 0;
+    box-shadow: 4px 4px 6px rgb(0, 0, 0, .4);
+}
+
+.boton-borrar:hover {
+    background-color: red;
+    color: white;
+}

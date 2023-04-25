@@ -19,3 +19,5 @@ router.get('/profesores', async (req, res) => {
 
     res.status(200).json(data);
 });
+
+module.exports = router;
