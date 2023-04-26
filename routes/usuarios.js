@@ -111,6 +111,7 @@ router.post('/login', async (req, res) => {
 
     // Almacenar información de sesión en req.session
     req.session.usuario = { id_usuario, nombre, correo, rol };
+    console.log(req.session); // Agregar esta línea para imprimir la sesión
     return res.status(201).json({ message: 'Inicio de sesión exitoso' });
 
 });
@@ -123,14 +124,13 @@ router.post('/login', async (req, res) => {
 
 router.get('/account', async (req, res) => {
     // Obtener la información de sesión del usuario para verificar si está autenticado
-    const usuarioId = req.session.usuario.id_usuario;
 
-    if (usuarioId) {
+    if (req.session.usuario && req.session.usuario.id_usuario) {
         // Si el usuario está autenticado, hacer una consulta a la base de datos para obtener sus datos
         const { data, error } = await supabase
             .from('usuarios')
             .select('id_usuario, correo, nombre, apellidos, rol')
-            .eq('id_usuario', usuarioId)
+            .eq('id_usuario', req.session.usuario.id_usuario)
             .single();
 
         if (error) {
