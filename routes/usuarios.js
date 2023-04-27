@@ -51,6 +51,11 @@ router.get('/usuarios/:id', async (req, res) => {
 router.post('/singup', async (req, res) => {
     const { nombre, apellidos, correo, password, rol } = req.body;
 
+    // Verificar que no haya campos en blanco
+    if (!nombre || !apellidos || !correo || !password || !rol) {
+        return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
     // Hasheamos la contraseña
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -90,31 +95,28 @@ router.post('/login', async (req, res) => {
     const { correo, password } = req.body;
     const { data, error } = await supabase
         .from('usuarios')
-        .select('id_usuario, nombre, correo, password, rol')
+        .select('id_usuario, nombre, apellidos, correo, password, rol')
         .eq('correo', correo)
         .single();
 
     if (error) {
-        return res.status(500).json({ error: 'Error al obtener el usuario' });
+        return res.status(500).json({ success: false, message: 'Error al obtener el usuario, porfavor introduzca los datos correctamente' });
     }
 
     if (!data) {
-        return res.status(401).json({ error: 'Credenciales incorrectas' });
+        return res.status(401).json({ success: false, message: 'Credenciales incorrectas, porfavor introduzca los datos correctamente' });
     }
 
-    const { id_usuario, nombre, password: hashedPassword, rol } = data;
+    const { id_usuario, nombre, apellidos, password: hashedPassword, rol } = data;
     const passwordMatch = await bcrypt.compare(password, hashedPassword);
 
     if (!passwordMatch) {
-        return res.status(401).json({ error: 'Credenciales incorrectas' });
+        return res.status(401).json({ success: false, message: 'Credenciales incorrectas, porfavor introduzca los datos correctamente' });
     }
 
-    // Almacenar información de sesión en req.session
-    req.session.usuario = { id_usuario, nombre, correo, rol };
-    console.log(req.session); // Agregar esta línea para imprimir la sesión
-    return res.status(201).json({ message: 'Inicio de sesión exitoso' });
-
+    return res.status(201).json({ success: true, message: 'Inicio de sesión exitoso', id_usuario, nombre, apellidos, correo, rol });
 });
+
 
 
 
