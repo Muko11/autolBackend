@@ -22,6 +22,7 @@ router.get('/profesores', async (req, res) => {
 
 router.post('/profesor/:id_profesor/:id_autoescuela', async (req, res) => {
     const { id_profesor, id_autoescuela } = req.params;
+
     try {
         // Buscar si el profesor ya está asociado a una autoescuela
         const { data: profesores } = await supabase
@@ -36,21 +37,19 @@ router.post('/profesor/:id_profesor/:id_autoescuela', async (req, res) => {
 
         const { data, error } = await supabase
             .from('profesores')
-            .insert([{ id_profesor, id_autoescuela }]);
+            .insert([{ id_profesor: id_profesor, id_autoescuela }]);
 
         if (error) {
             console.error(error);
             return res.status(500).json({ error: 'No se ha podido insertar el registro' });
         }
 
-        res.status(201).json({ id_profesor, id_autoescuela });
+        res.status(201).json({ id_profesor: id_profesor, id_autoescuela });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ error: 'Error en la inserción' });
     }
 });
-
-
 
 
 module.exports = router;
