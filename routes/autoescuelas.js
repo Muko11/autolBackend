@@ -119,30 +119,59 @@ router.post('/autoescuela/:id_autoescuela/:id_profesor', async (req, res) => {
 router.put('/autoescuela/:id_autoescuela', async (req, res) => {
     const { id_autoescuela } = req.params;
     const { nombre, telefono, precio_practica } = req.body;
-  
+
     try {
-      const { data: updatedAutoescuela, error } = await supabase
-        .from('autoescuelas')
-        .update({
-          nombre,
-          telefono,
-          precio_practica,
-        })
-        .eq('id_autoescuela', id_autoescuela)
-        .single();
-  
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'No se ha podido actualizar la información de la autoescuela' });
-      }
-  
-      res.status(200).json(updatedAutoescuela);
+        const { data: updatedAutoescuela, error } = await supabase
+            .from('autoescuelas')
+            .update({
+                nombre,
+                telefono,
+                precio_practica,
+            })
+            .match({ id_autoescuela });
+
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'No se ha podido actualizar la información de la autoescuela' });
+        }
+
+        res.status(200).json(updatedAutoescuela);
     } catch (err) {
-      console.error(err.message);
-      res.status(500).json({ error: 'Error en la actualización de información de la autoescuela' });
+        console.error(err.message);
+        res.status(500).json({ error: 'Error en la actualización de información de la autoescuela' });
     }
-  });
-  
+});
+
+
+
+/* Actualizar inputs */
+router.put('/autoescuela/:id_administrador/:id_autoescuela', async (req, res) => {
+    const { id_administrador, id_autoescuela } = req.params;
+    const { nombre, telefono, precio_practica } = req.body;
+
+    try {
+        const { data: updatedAutoescuela, error } = await supabase
+            .from('autoescuelas')
+            .update({
+                nombre,
+                telefono,
+                precio_practica,
+            })
+            .eq('id_autoescuela', id_autoescuela)
+            .eq('id_administrador', id_administrador)
+            .single();
+
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'No se ha podido actualizar la información de la autoescuela' });
+        }
+
+        res.status(200).json(updatedAutoescuela);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Error en la actualización de información de la autoescuela' });
+    }
+});
 
 
 

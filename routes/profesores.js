@@ -18,7 +18,7 @@ router.get('/profesores', async (req, res) => {
     }
 
     res.status(200).json(data);
-});
+}); 
 
 router.post('/profesor/:id_profesor/:id_autoescuela', async (req, res) => {
     const { id_profesor, id_autoescuela } = req.params;
