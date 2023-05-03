@@ -5,6 +5,8 @@ const bcrypt = require('bcryptjs');
 // Configuración de Supabase
 const supabase = require('../config');
 
+/* Listar autoescuelas */
+
 router.get('/autoescuelas', async (req, res) => {
     const { data, error } = await supabase.from('autoescuelas').select('*');
 
@@ -14,6 +16,35 @@ router.get('/autoescuelas', async (req, res) => {
 
     res.status(200).json(data);
 });
+
+
+
+/* Buscar datos de la autoescuela por id_administrador */
+
+router.get('/autoescuela/:id_usuario', async (req, res) => {
+    const { id_usuario } = req.params;
+    try {
+        const { data: autoescuela, error } = await supabase
+            .from('autoescuelas')
+            .select('*')
+            .eq('id_administrador', id_usuario)
+            .single();
+
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'No se ha podido obtener la información de la autoescuela' });
+        }
+
+        res.status(200).json(autoescuela);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Error en la obtención de información de la autoescuela' });
+    }
+});
+
+
+
+/* Crear autoescuela */
 
 router.post('/autoescuela', async (req, res) => {
     const { nombre, telefono, precio_practica, id_administrador } = req.body;
@@ -51,27 +82,7 @@ router.post('/autoescuela', async (req, res) => {
 
 
 
-router.get('/autoescuela/:id_usuario', async (req, res) => {
-    const { id_usuario } = req.params;
-    try {
-        const { data: autoescuela, error } = await supabase
-            .from('autoescuelas')
-            .select('*')
-            .eq('id_administrador', id_usuario)
-            .single();
-
-        if (error) {
-            console.error(error);
-            return res.status(500).json({ error: 'No se ha podido obtener la información de la autoescuela' });
-        }
-
-        res.status(200).json(autoescuela);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Error en la obtención de información de la autoescuela' });
-    }
-});
-
+/* Asignar id_profesor como id_administrador al crear la autoescuela */
 
 router.post('/autoescuela/:id_autoescuela/:id_profesor', async (req, res) => {
     const { id_autoescuela, id_profesor } = req.params;
@@ -116,62 +127,76 @@ router.post('/autoescuela/:id_autoescuela/:id_profesor', async (req, res) => {
 });
 
 
-router.put('/autoescuela/:id_autoescuela', async (req, res) => {
-    const { id_autoescuela } = req.params;
+router.put('/autoescuela/:id_autoescuela/:id_administrador', async (req, res) => {
+    const { id_autoescuela, id_administrador } = req.params;
     const { nombre, telefono, precio_practica } = req.body;
 
     try {
-        const { data: updatedAutoescuela, error } = await supabase
+        // Obtener la autoescuela de la base de datos usando Supabase
+        const { data, error } = await supabase
             .from('autoescuelas')
-            .update({
-                nombre,
-                telefono,
-                precio_practica,
-            })
-            .match({ id_autoescuela });
-
-        if (error) {
-            console.error(error);
-            return res.status(500).json({ error: 'No se ha podido actualizar la información de la autoescuela' });
-        }
-
-        res.status(200).json(updatedAutoescuela);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Error en la actualización de información de la autoescuela' });
-    }
-});
-
-
-
-/* Actualizar inputs */
-router.put('/autoescuela/:id_administrador/:id_autoescuela', async (req, res) => {
-    const { id_administrador, id_autoescuela } = req.params;
-    const { nombre, telefono, precio_practica } = req.body;
-
-    try {
-        const { data: updatedAutoescuela, error } = await supabase
-            .from('autoescuelas')
-            .update({
-                nombre,
-                telefono,
-                precio_practica,
-            })
+            .update({ nombre, telefono, precio_practica })
             .eq('id_autoescuela', id_autoescuela)
-            .eq('id_administrador', id_administrador)
-            .single();
-
+            .eq('id_administrador', id_administrador);
+        console.log(data)
         if (error) {
-            console.error(error);
-            return res.status(500).json({ error: 'No se ha podido actualizar la información de la autoescuela' });
+            throw error;
         }
 
-        res.status(200).json(updatedAutoescuela);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Error en la actualización de información de la autoescuela' });
+        // Si se ha modificado la autoescuela, devolver los nuevos datos
+        if (data) {
+            res.status(200).json(data);
+        } else {
+            res.status(404).json({ error: 'No se ha encontrado la autoescuela' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Ha ocurrido un error al modificar la autoescuela');
     }
 });
+
+
+
+router.put('/autoescuela/:id_administrador', async (req, res) => {
+    const { id_administrador } = req.params;
+    const { nombre, telefono, precio_practica } = req.body;
+
+    try {
+        // Obtener la autoescuela de la base de datos usando Supabase
+        const { data: updateData, error: updateError } = await supabase
+            .from('autoescuelas')
+            .update({ nombre, telefono, precio_practica })
+            .eq('id_administrador', id_administrador);
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        // Verificar si la fila se ha actualizado correctamente
+        const { data: autoescuela, error: selectError } = await supabase
+            .from('autoescuelas')
+            .select()
+            .eq('id_administrador', id_administrador);
+
+        if (selectError) {
+            throw selectError;
+        }
+
+        // Si se ha encontrado la autoescuela, devolver los datos
+        if (autoescuela && autoescuela.length > 0) {
+            res.status(200).json(autoescuela[0]);
+        } else {
+            res.status(404).json({ error: 'No se ha encontrado la autoescuela' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Ha ocurrido un error al obtener la autoescuela');
+    }
+});
+
+
+
+
 
 
 
