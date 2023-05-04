@@ -21,6 +21,50 @@ router.get('/profesores', async (req, res) => {
 });
 
 
+/* Lista de profesores por id_autoescuela*/
+
+router.get('/profesor/autoescuela/:id_autoescuela', async (req, res) => {
+    const { id_autoescuela } = req.params;
+  
+    try {
+      const { data: profesores, error } = await supabase
+        .from('profesores')
+        .select('*')
+        .eq('id_autoescuela', id_autoescuela);
+  
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Error en la consulta' });
+      }
+  
+      const profesoresConUsuarios = await Promise.all(
+        profesores.map(async (profesor) => {
+          const { data: usuario } = await supabase
+            .from('usuarios')
+            .select('nombre, apellidos, correo')
+            .eq('id_usuario', profesor.id_profesor)
+            .single();
+  
+          return { ...profesor, ...usuario };
+        })
+      );
+  
+      res.status(200).json(profesoresConUsuarios);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ error: 'Error en la consulta' });
+    }
+  });
+  
+
+
+
+
+
+
+
+
+
 /* Comprobar si el profesor ya esta insertado en la tabla profesores para asignarle el id_autoescuela correspondiente */
 
 router.get("/profesor/:id_profesor", async (req, res) => {
@@ -94,7 +138,7 @@ router.post('/profesor/agregar/:correo/:id_autoescuela', async (req, res) => {
         // Obtener id_usuario a partir del correo
         const { data: usuarios, error: errorUsuario } = await supabase
             .from('usuarios')
-            .select('id_usuario')
+            .select('id_usuario, rol')
             .eq('correo', correo)
             .single();
 
@@ -103,6 +147,12 @@ router.post('/profesor/agregar/:correo/:id_autoescuela', async (req, res) => {
         }
 
         const id_profesor = usuarios.id_usuario;
+
+
+        // Si el usuario tiene rol de alumno, devolver un error
+        if (usuarios.rol === 'alumno') {
+            return res.status(400).json({ error: 'El correo introducido no pertenece a un profesor' });
+        }
 
         // Buscar si el profesor ya está asociado a una autoescuela
         const { data: profesores } = await supabase
