@@ -21,13 +21,13 @@ router.get('/autoescuelas', async (req, res) => {
 
 /* Buscar datos de la autoescuela por id_administrador */
 
-router.get('/autoescuela/:id_usuario', async (req, res) => {
-    const { id_usuario } = req.params;
+router.get('/autoescuela/usuario/:id_autoescuela', async (req, res) => {
+    const { id_autoescuela } = req.params;
     try {
         const { data: autoescuela, error } = await supabase
             .from('autoescuelas')
             .select('*')
-            .eq('id_administrador', id_usuario)
+            .eq('id_autoescuela', id_autoescuela)
             .single();
 
         if (error) {
@@ -127,7 +127,7 @@ router.post('/autoescuela/:id_autoescuela/:id_profesor', async (req, res) => {
 });
 
 
-router.put('/autoescuela/:id_autoescuela/:id_administrador', async (req, res) => {
+/* router.put('/autoescuela/:id_autoescuela/:id_administrador', async (req, res) => {
     const { id_autoescuela, id_administrador } = req.params;
     const { nombre, telefono, precio_practica } = req.body;
 
@@ -153,9 +153,10 @@ router.put('/autoescuela/:id_autoescuela/:id_administrador', async (req, res) =>
         console.error(error);
         res.status(500).send('Ha ocurrido un error al modificar la autoescuela');
     }
-});
+}); */
 
 
+/* Modificar los datos de la autoescuela. Solo el administrador puede hacerlo */
 
 router.put('/autoescuela/:id_administrador', async (req, res) => {
     const { id_administrador } = req.params;
