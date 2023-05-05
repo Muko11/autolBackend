@@ -25,43 +25,36 @@ router.get('/profesores', async (req, res) => {
 
 router.get('/profesor/autoescuela/:id_autoescuela', async (req, res) => {
     const { id_autoescuela } = req.params;
-  
+
     try {
-      const { data: profesores, error } = await supabase
-        .from('profesores')
-        .select('*')
-        .eq('id_autoescuela', id_autoescuela);
-  
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Error en la consulta' });
-      }
-  
-      const profesoresConUsuarios = await Promise.all(
-        profesores.map(async (profesor) => {
-          const { data: usuario } = await supabase
-            .from('usuarios')
-            .select('nombre, apellidos, correo')
-            .eq('id_usuario', profesor.id_profesor)
-            .single();
-  
-          return { ...profesor, ...usuario };
-        })
-      );
-  
-      res.status(200).json(profesoresConUsuarios);
+        const { data: profesores, error } = await supabase
+            .from('profesores')
+            .select('*')
+            .eq('id_autoescuela', id_autoescuela);
+
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Error en la consulta' });
+        }
+
+        const profesoresConUsuarios = await Promise.all(
+            profesores.map(async (profesor) => {
+                const { data: usuario } = await supabase
+                    .from('usuarios')
+                    .select('nombre, apellidos, correo, id_usuario')
+                    .eq('id_usuario', profesor.id_profesor)
+                    .single();
+
+                return { ...profesor, ...usuario };
+            })
+        );
+
+        res.status(200).json(profesoresConUsuarios);
     } catch (err) {
-      console.error(err.message);
-      res.status(500).json({ error: 'Error en la consulta' });
+        console.error(err.message);
+        res.status(500).json({ error: 'Error en la consulta' });
     }
-  });
-  
-
-
-
-
-
-
+});
 
 
 
@@ -91,6 +84,57 @@ router.get("/profesor/:id_profesor", async (req, res) => {
         res.status(500).json({ message: "Error al obtener el profesor" });
     }
 });
+
+
+/* Ruta para comprobar si un profesor es administrador de una autoescuela para poder mostrar cierto código */
+
+/* router.get('/profesor/:id_autoescuela/:id_profesor/administrador', async (req, res) => {
+    const { id_autoescuela, id_profesor } = req.params;
+
+    try {
+        const { data: profesor, error: error1 } = await supabase
+            .from('profesores')
+            .select('id_profesor, id_autoescuela')
+            .eq('id_profesor', id_profesor)
+            .eq('id_autoescuela', id_autoescuela)
+            .single();
+
+        if (error1) {
+            console.error(error1);
+            return res.status(500).json({ error: 'Error en la consulta' });
+        }
+
+        if (!profesor) {
+            return res.status(404).json({ error: 'Profesor no encontrado' });
+        }
+
+        const { data: autoescuela, error: error2 } = await supabase
+            .from('autoescuelas')
+            .select('id_administrador')
+            .eq('id_autoescuela', id_autoescuela)
+            .single();
+
+        if (error2) {
+            console.error(error2);
+            return res.status(500).json({ error: 'Error en la consulta' });
+        }
+
+        if (!autoescuela) {
+            return res.status(404).json({ error: 'Autoescuela no encontrada' });
+        }
+
+        if (autoescuela.id_administrador === profesor.id_profesor) {
+            res.status(200).json({ es_administrador: true });
+        } else {
+            res.status(200).json({ es_administrador: false });
+        }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Error en la consulta' });
+    }
+}); */
+
+
 
 
 /* A */
@@ -180,6 +224,31 @@ router.post('/profesor/agregar/:correo/:id_autoescuela', async (req, res) => {
         res.status(500).json({ error: 'Error en la inserción' });
     }
 });
+
+
+/* Borrar profesor por su id_profesor en las autoescuelas */
+
+router.delete('/profesor/:id_profesor', async (req, res) => {
+    const { id_profesor } = req.params;
+
+    try {
+        const { error } = await supabase
+            .from('profesores')
+            .delete()
+            .eq('id_profesor', id_profesor);
+
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Error al borrar el profesor' });
+        }
+
+        return res.status(200).json({ message: 'Profesor eliminado correctamente' });
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).json({ error: 'Error al borrar el profesor' });
+    }
+});
+
 
 
 module.exports = router;
