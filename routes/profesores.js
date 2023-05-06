@@ -88,6 +88,34 @@ router.get("/profesor/:id_profesor", async (req, res) => {
 
 /* Ruta para comprobar si un profesor es administrador de una autoescuela para poder mostrar cierto código */
 
+
+router.get('/profesor/admin/:id_administrador', async (req, res) => {
+    const { id_administrador } = req.params;
+
+    try {
+        const { data: autoescuela, error } = await supabase
+            .from('autoescuelas')
+            .select('id_administrador')
+            .eq('id_administrador', id_administrador)
+            .single();
+
+        if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Error en la consulta' });
+        }
+
+        if (autoescuela && autoescuela.id_administrador) {
+            res.status(200).json({ es_administrador: true });
+        } else {
+            res.status(200).json({ es_administrador: false });
+        }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Error en la consulta' });
+    }
+});
+
+
 /* router.get('/profesor/:id_autoescuela/:id_profesor/administrador', async (req, res) => {
     const { id_autoescuela, id_profesor } = req.params;
 
