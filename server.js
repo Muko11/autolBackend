@@ -4,6 +4,7 @@ const cors = require('cors');
 const usuarioRoutes = require('./routes/usuarios');
 const profesorRoutes = require('./routes/profesores');
 const autoescuelaRoutes = require('./routes/autoescuelas');
+const alumnoRoutes = require('./routes/alumnos');
 const session = require('express-session');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors());
 app.use('/autol', usuarioRoutes);
 app.use('/autol', profesorRoutes);
 app.use('/autol', autoescuelaRoutes);
+app.use('/autol', alumnoRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Ruta GET para mostrar el index

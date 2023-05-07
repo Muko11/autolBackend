@@ -6,21 +6,6 @@ const bcrypt = require('bcryptjs');
 const supabase = require('../config');
 
 
-/* Lista de profesores */
-
-router.get('/profesores', async (req, res) => {
-    const { data, error } = await supabase
-        .from('usuarios')
-        .select('nombre, apellidos, correo')
-        .join('profesores', { on: 'usuarios.id_usuario = profesores.id_profesor' })
-    if (error) {
-        return res.status(500).json({ error: 'Error al obtener los usuarios' });
-    }
-
-    res.status(200).json(data);
-});
-
-
 /* Lista de profesores por id_autoescuela*/
 
 router.get('/profesor/autoescuela/:id_autoescuela', async (req, res) => {

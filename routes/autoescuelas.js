@@ -17,6 +17,22 @@ router.get('/autoescuelas', async (req, res) => {
     res.status(200).json(data);
 });
 
+/* Buscar datos de la autoescuela por id_autoescuela */
+
+router.get('/autoescuela/:id_autoescuela', async (req, res) => {
+    const { id_autoescuela } = req.params;
+    const { data, error } = await supabase
+        .from('autoescuelas')
+        .select('nombre, telefono, precio_practica')
+        .eq('id_autoescuela', id_autoescuela);
+
+    if (error) {
+        res.status(500).json({ error: error.message });
+    } else {
+        res.status(200).json(data[0]);
+    }
+});
+
 
 
 /* Buscar datos de la autoescuela por id_administrador */
