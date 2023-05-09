@@ -45,14 +45,14 @@ router.post('/practica/:id_profesor', async (req, res) => {
 
 /* Actualizar practica */
 
-router.put('/practica/:id_profesor/:fecha/:hora', async (req, res) => {
-  const { id_profesor, fecha, hora } = req.params;
-  const { tipo, nuevaFecha, nuevaHora } = req.body;
+router.put('/practica/:id_profesor/:fecha/:hora/:tipo', async (req, res) => {
+  const { id_profesor, fecha, hora, tipo } = req.params;
+  const { nuevotipo, nuevaFecha, nuevaHora } = req.body;
 
   try {
     const { error } = await supabase
       .from('practicas')
-      .update({ tipo, fecha: nuevaFecha, hora: nuevaHora })
+      .update({ tipo: nuevotipo, fecha: nuevaFecha, hora: nuevaHora })
       .eq('id_profesor', id_profesor)
       .eq('fecha', fecha)
       .eq('hora', hora);
