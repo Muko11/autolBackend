@@ -45,7 +45,7 @@ router.post('/practica/:id_profesor', async (req, res) => {
 
 /* Actualizar practica */
 
-router.put('/practica/:id_profesor/:fecha/:hora/:tipo', async (req, res) => {
+router.put('/practica/:id_profesor/:fecha/:hora', async (req, res) => {
   const { id_profesor, fecha, hora, tipo } = req.params;
   const { nuevotipo, nuevaFecha, nuevaHora } = req.body;
 
