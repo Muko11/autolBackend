@@ -260,6 +260,28 @@ router.put('/practica/alumno/:id_profesor/:fecha/:hora/:id_alumno', async (req, 
 
 
 
+/* Cancelar reserva estableciendo de nuevo a NULL el id_alumno */
+
+router.put('/practica/cancelar/:id_profesor/:fecha/:hora/:id_alumno', async (req, res) => {
+  const { id_profesor, fecha, hora, id_alumno } = req.params;
+
+  // Actualizar el campo id_alumno a NULL en la tabla practicas
+  const { data, error } = await supabase
+    .from('practicas')
+    .update({ id_alumno: null })
+    .eq('id_profesor', id_profesor)
+    .eq('fecha', fecha)
+    .eq('hora', hora)
+    .eq('id_alumno', id_alumno);
+
+  if (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Error al actualizar la práctica en la base de datos' });
+  }
+
+  return res.json({ message: 'Práctica actualizada correctamente' });
+});
+
 
 
 /* Borrar practica por su id_profesor en las practicas */
