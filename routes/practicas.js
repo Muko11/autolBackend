@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 // Configuración de Supabase
 const supabase = require('../config');
 
-/* Mostrar prácticas según la autoescuela */
+/* Mostrar prácticas a los profesores según la autoescuela */
 
 router.get('/practica/:id_profesor', async (req, res) => {
   const { id_profesor } = req.params;
@@ -21,6 +21,154 @@ router.get('/practica/:id_profesor', async (req, res) => {
   }
 });
 
+
+/* Mostrar practicas a los alumnos */
+
+router.get('/practica/alumnos/:id_autoescuela', async (req, res) => {
+  const { id_autoescuela } = req.params;
+
+  // Obtener los ID de los profesores que pertenecen a la autoescuela
+  const { data: profesores, error: errorProfesores } = await supabase
+    .from('profesores')
+    .select('id_profesor')
+    .eq('id_autoescuela', id_autoescuela);
+
+  if (errorProfesores) {
+    console.log(errorProfesores);
+    return res.status(500).json({ message: 'Error al obtener los profesores de la autoescuela' });
+  }
+
+  const idsProfesores = profesores.map((profesor) => profesor.id_profesor);
+
+  // Obtener todas las prácticas de los profesores de la autoescuela
+  const { data: practicas, error: errorPracticas } = await supabase
+    .from('practicas')
+    .select('*')
+    .in('id_profesor', idsProfesores);
+
+  if (errorPracticas) {
+    console.log(errorPracticas);
+    return res.status(500).json({ message: 'Error al obtener las prácticas de los profesores' });
+  }
+
+  // Obtener los nombres y apellidos de los profesores a partir de la tabla usuarios
+  const practicasConProfesor = await Promise.all(practicas.map(async (practica) => {
+    const { data: usuario, error: errorUsuario } = await supabase
+      .from('usuarios')
+      .select('nombre, apellidos')
+      .eq('id_usuario', practica.id_profesor);
+
+    if (errorUsuario) {
+      console.log(errorUsuario);
+      return res.status(500).json({ message: 'Error al obtener los nombres y apellidos del profesor de la práctica' });
+    }
+
+    return { ...practica, profesor: usuario[0] };
+
+  }));
+
+  // Enviar las prácticas encontradas con los nombres y apellidos de los profesores como respuesta
+  return res.json(practicasConProfesor);
+});
+
+
+
+/* Historial de practicas por id_alumno */
+
+router.get('/practica/historial/:id_alumno', async (req, res) => {
+  const { id_alumno } = req.params;
+
+  try {
+    // Buscar las prácticas correspondientes en la tabla practicas
+    const { data: practicas, error: errorPracticas } = await supabase
+      .from('practicas')
+      .select('*')
+      .eq('id_alumno', id_alumno);
+
+    if (errorPracticas) {
+      console.log(errorPracticas);
+      return res.status(500).json({ message: 'Error al buscar las prácticas en la base de datos' });
+    }
+
+    // Obtener el nombre y apellidos del profesor de cada práctica
+    const promesasUsuarios = practicas.map(practica =>
+      supabase
+        .from('usuarios')
+        .select('nombre, apellidos')
+        .eq('id_usuario', practica.id_profesor)
+        .single()
+    );
+    const usuarios = await Promise.all(promesasUsuarios);
+
+    // Asociar el nombre y apellidos del profesor con cada práctica
+    const practicasConUsuarios = practicas.map((practica, i) => ({
+      ...practica,
+      profesor: usuarios[i],
+    }));
+
+    return res.json(practicasConUsuarios);
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Error al buscar las prácticas en la base de datos' });
+  }
+});
+
+
+
+/* router.get('/practica/historial/:id_alumno', async (req, res) => {
+  const { id_alumno } = req.params;
+
+  // Buscar las prácticas correspondientes en la tabla practicas
+  const { data: practicas, error: errorPracticas } = await supabase
+    .from('practicas')
+    .select('*')
+    .eq('id_alumno', id_alumno);
+
+  if (errorPracticas) {
+    console.log(errorPracticas);
+    return res.status(500).json({ message: 'Error al buscar las prácticas en la base de datos' });
+  }
+
+  return res.json(practicas);
+}); */
+
+
+
+
+
+
+
+/* router.get('/practica/alumnos/:id_autoescuela', async (req, res) => {
+  const { id_autoescuela } = req.params;
+
+  // Obtener los ID de los profesores que pertenecen a la autoescuela
+  const { data: profesores, error: errorProfesores } = await supabase
+    .from('profesores')
+    .select('id_profesor')
+    .eq('id_autoescuela', id_autoescuela);
+
+  if (errorProfesores) {
+    console.log(errorProfesores);
+    return res.status(500).json({ message: 'Error al obtener los profesores de la autoescuela' });
+  }
+
+  const idsProfesores = profesores.map((profesor) => profesor.id_profesor);
+
+  // Obtener todas las prácticas de los profesores de la autoescuela
+  const { data: practicas, error: errorPracticas } = await supabase
+    .from('practicas')
+    .select('*')
+    .in('id_profesor', idsProfesores);
+
+  if (errorPracticas) {
+    console.log(errorPracticas);
+    return res.status(500).json({ message: 'Error al obtener las prácticas de los profesores' });
+  }
+
+  // Enviar las prácticas encontradas como respuesta
+  return res.json(practicas);
+}); */
 
 
 /* Crear practica con id_alumno en null */
@@ -68,6 +216,49 @@ router.put('/practica/:id_profesor/:fecha/:hora', async (req, res) => {
     return res.status(500).json({ error: 'Error al actualizar la práctica' });
   }
 });
+
+
+
+/* Actualizar el NULL del id_alumno cuando reserve una practica */
+
+router.put('/practica/alumno/:id_profesor/:fecha/:hora/:id_alumno', async (req, res) => {
+  const { id_profesor, fecha, hora, id_alumno } = req.params;
+
+  // Buscar la práctica correspondiente en la tabla practicas
+  const { data: practica, error: errorPractica } = await supabase
+    .from('practicas')
+    .select('*')
+    .eq('id_profesor', id_profesor)
+    .eq('fecha', fecha)
+    .eq('hora', hora)
+    .limit(1);
+
+  if (errorPractica) {
+    console.log(errorPractica);
+    return res.status(500).json({ message: 'Error al buscar la práctica en la base de datos' });
+  }
+
+  if (!practica || practica.length === 0) {
+    return res.status(404).json({ message: 'No se encontró la práctica solicitada' });
+  }
+
+  // Actualizar el id_alumno en la tabla practicas
+  const { data, error } = await supabase
+    .from('practicas')
+    .update({ id_alumno: id_alumno })
+    .eq('id_profesor', id_profesor)
+    .eq('fecha', fecha)
+    .eq('hora', hora);
+
+  if (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Error al actualizar la práctica' });
+  }
+
+  return res.json({ message: 'Práctica actualizada correctamente' });
+});
+
+
 
 
 
