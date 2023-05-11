@@ -22,6 +22,23 @@ router.get('/practica/:id_profesor', async (req, res) => {
 });
 
 
+/* Mostrar nombre y apellidos del alumno en las practicas */
+
+router.get('/practica/nombre/apellidos/:id_alumno', async (req, res) => {
+  const { id_alumno } = req.params;
+  const { data: usuarios, error } = await supabase
+    .from('usuarios')
+    .select('nombre, apellidos')
+    .eq('id_usuario', id_alumno);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+  } else {
+    res.status(200).json(usuarios);
+  }
+});
+
+
 /* Mostrar practicas a los alumnos */
 
 router.get('/practica/alumnos/:id_autoescuela', async (req, res) => {
