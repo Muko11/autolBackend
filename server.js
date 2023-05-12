@@ -6,6 +6,7 @@ const profesorRoutes = require('./routes/profesores');
 const autoescuelaRoutes = require('./routes/autoescuelas');
 const alumnoRoutes = require('./routes/alumnos');
 const practicaRoutes = require('./routes/practicas');
+const comunicadoRoutes = require('./routes/comunicados');
 const session = require('express-session');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/autol', profesorRoutes);
 app.use('/autol', autoescuelaRoutes);
 app.use('/autol', alumnoRoutes);
 app.use('/autol', practicaRoutes);
+app.use('/autol', comunicadoRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Ruta GET para mostrar el index
