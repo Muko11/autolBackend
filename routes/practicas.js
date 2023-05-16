@@ -132,65 +132,43 @@ router.get('/practica/historial/:id_alumno', async (req, res) => {
 });
 
 
-
-/* router.get('/practica/historial/:id_alumno', async (req, res) => {
-  const { id_alumno } = req.params;
-
-  // Buscar las prácticas correspondientes en la tabla practicas
-  const { data: practicas, error: errorPracticas } = await supabase
-    .from('practicas')
-    .select('*')
-    .eq('id_alumno', id_alumno);
-
-  if (errorPracticas) {
-    console.log(errorPracticas);
-    return res.status(500).json({ message: 'Error al buscar las prácticas en la base de datos' });
-  }
-
-  return res.json(practicas);
-}); */
-
-
-
-
-
-
-
-/* router.get('/practica/alumnos/:id_autoescuela', async (req, res) => {
-  const { id_autoescuela } = req.params;
-
-  // Obtener los ID de los profesores que pertenecen a la autoescuela
-  const { data: profesores, error: errorProfesores } = await supabase
-    .from('profesores')
-    .select('id_profesor')
-    .eq('id_autoescuela', id_autoescuela);
-
-  if (errorProfesores) {
-    console.log(errorProfesores);
-    return res.status(500).json({ message: 'Error al obtener los profesores de la autoescuela' });
-  }
-
-  const idsProfesores = profesores.map((profesor) => profesor.id_profesor);
-
-  // Obtener todas las prácticas de los profesores de la autoescuela
-  const { data: practicas, error: errorPracticas } = await supabase
-    .from('practicas')
-    .select('*')
-    .in('id_profesor', idsProfesores);
-
-  if (errorPracticas) {
-    console.log(errorPracticas);
-    return res.status(500).json({ message: 'Error al obtener las prácticas de los profesores' });
-  }
-
-  // Enviar las prácticas encontradas como respuesta
-  return res.json(practicas);
-}); */
-
-
 /* Crear practica con id_alumno en null */
 
 router.post('/practica/:id_profesor', async (req, res) => {
+  const { id_profesor } = req.params;
+  const { fecha, hora, tipo } = req.body;
+
+  // Verificar si ya existe un registro con los mismos valores
+  const { data: existentData, error: existentError } = await supabase
+    .from('practicas')
+    .select()
+    .eq('id_profesor', id_profesor)
+    .eq('fecha', fecha)
+    .eq('hora', hora);
+
+  if (existentError) {
+    return res.status(500).json({ error: existentError.message });
+  }
+
+  if (existentData.length > 0) {
+    // Ya existe un registro con los mismos valores, no se realiza la inserción
+    return res.status(409).json({ message: 'Ya existe una práctica con esos valores' });
+  }
+
+  // No existe un registro con los mismos valores, se realiza la inserción
+  const { data, error } = await supabase
+    .from('practicas')
+    .insert({ id_profesor, id_alumno: null, fecha, hora, tipo });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.status(201).json({ data });
+});
+
+
+/* router.post('/practica/:id_profesor', async (req, res) => {
   const { id_profesor } = req.params;
   const { fecha, hora, tipo } = req.body;
 
@@ -203,36 +181,102 @@ router.post('/practica/:id_profesor', async (req, res) => {
   } else {
     res.status(201).json({ data });
   }
-});
+}); */
 
 
 
 
 /* Actualizar practica */
 
-router.put('/practica/:id_profesor/:fecha/:hora', async (req, res) => {
-  const { id_profesor, fecha, hora, tipo } = req.params;
-  const { nuevotipo, nuevaFecha, nuevaHora } = req.body;
+router.put("/practica/:id_practica", async (req, res) => {
+  const { id_practica } = req.params;
+  const { fecha, hora, tipo } = req.body;
 
   try {
-    const { error } = await supabase
-      .from('practicas')
-      .update({ tipo: nuevotipo, fecha: nuevaFecha, hora: nuevaHora })
-      .eq('id_profesor', id_profesor)
-      .eq('fecha', fecha)
-      .eq('hora', hora);
+    const { data, error } = await supabase
+      .from("practicas")
+      .update({ fecha, hora, tipo })
+      .eq("id_practica", id_practica)
+      .single();
 
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error al actualizar la práctica' });
-    }
+    if (error) throw error;
 
-    return res.status(200).json({ message: 'Práctica actualizada correctamente' });
-  } catch (err) {
-    console.error(err.message);
-    return res.status(500).json({ error: 'Error al actualizar la práctica' });
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error al actualizar la práctica");
   }
 });
+
+/* router.put("/practica/:id_practica", async (req, res) => {
+  const { id_practica } = req.params;
+  const { fecha, hora, tipo } = req.body;
+
+  try {
+    // Verificar si ya existe una práctica con los mismos valores
+    const { data: existentData, error: existentError } = await supabase
+      .from("practicas")
+      .select()
+      .eq("id_practica", id_practica);
+
+    if (existentError) {
+      return res.status(500).json({ error: existentError.message });
+    }
+
+    if (existentData.length === 0) {
+      // No existe una práctica con ese id, devolver error
+      return res.status(404).json({ error: "No existe una práctica con ese ID" });
+    }
+
+    const existentPractica = existentData[0];
+    const { id_profesor: existentIdProfesor, fecha: existentFecha, hora: existentHora, tipo: existentTipo } = existentPractica;
+
+    if (existentIdProfesor === id_practica && existentFecha === fecha && existentHora === hora) {
+      // Solo actualizar el campo 'tipo'
+      const { data, error } = await supabase
+        .from("practicas")
+        .update({ tipo })
+        .eq("id_practica", id_practica)
+        .single();
+
+      if (error) throw error;
+
+      return res.status(200).json(data);
+    }
+
+    // Verificar si ya existe una práctica con los mismos id_profesor, fecha y hora
+    const { data: duplicateData, error: duplicateError } = await supabase
+      .from("practicas")
+      .select()
+      .eq("id_profesor", existentIdProfesor)
+      .eq("fecha", fecha)
+      .eq("hora", hora);
+
+    if (duplicateError) {
+      return res.status(500).json({ error: duplicateError.message });
+    }
+
+    if (duplicateData.length > 0) {
+      // Ya existe una práctica con esos valores, devolver error
+      return res.status(409).json({ error: "Ya existe una práctica con esos valores" });
+    }
+
+    // Los valores son distintos y no existen duplicados, se realiza la actualización completa
+    const { data, error } = await supabase
+      .from("practicas")
+      .update({ fecha, hora, tipo })
+      .eq("id_practica", id_practica)
+      .single();
+
+    if (error) throw error;
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error al actualizar la práctica");
+  }
+}); */
+
 
 
 
