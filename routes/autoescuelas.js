@@ -213,8 +213,26 @@ router.put('/autoescuela/:id_administrador', async (req, res) => {
 
 
 
+/* Borrar autoescuela */
 
+router.delete("/autoescuela/:id_autoescuela", async (req, res) => {
+    const { id_autoescuela } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from("autoescuelas")
+            .delete()
+            .eq("id_autoescuela", id_autoescuela);
 
+        if (error) throw error;
+
+        res.status(200).json({
+            message: `Autoescuela con id ${id_autoescuela} borrado correctamente`,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Ha ocurrido un error" });
+    }
+});
 
 
 module.exports = router;
